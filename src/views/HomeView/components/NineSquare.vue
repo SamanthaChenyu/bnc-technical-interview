@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps<{
   isOriginal: boolean
@@ -140,48 +140,77 @@ const calculateBallPositions = () => {
   })
 }
 
+// 動畫循環控制的新的響應式引用
+const animationLoopTimeoutId = ref<number | null>(null)
+
+// 可取消延遲的輔助函數
+const delay = (ms: number): Promise<void> => {
+  return new Promise((resolve) => {
+    animationLoopTimeoutId.value = setTimeout(resolve, ms)
+  })
+}
+
+const animateToCenterAndBack = async () => {
+  // 清除任何可能正在運行的先前循環
+  if (animationLoopTimeoutId.value) {
+    clearTimeout(animationLoopTimeoutId.value)
+    animationLoopTimeoutId.value = null
+  }
+
+  while (!props.isOriginal) {
+    try {
+      // 步驟 1: 移動到中心
+      calculateBallPositions()
+      await delay(2000)
+
+      if (props.isOriginal) break // 檢查屬性是否在延遲期間改變
+
+      // 步驟 2: 返回原始位置
+      ballTransforms.value = {}
+      await delay(2000)
+
+      if (props.isOriginal) break // 檢查屬性是否在延遲期間改變
+
+      // 步驟 3: 重複前的延遲
+      await delay(500)
+    } catch (e) {
+      console.error('動畫循環錯誤:', e)
+      break // 錯誤時退出循環
+    }
+  }
+  // 如果循環退出且處於原始模式，確保球回到原始位置
+  if (props.isOriginal) {
+    ballTransforms.value = {}
+  }
+}
+
 watch(
   () => props.isOriginal,
-  async () => {
-    if (!isAnimating.value) {
-      isAnimating.value = true
-    }
-
-    // 如果切換到中心模式，計算位置
-    if (!props.isOriginal) {
-      await nextTick()
-      setTimeout(() => {
-        calculateBallPositions()
-      }, 100)
+  async (newVal) => {
+    if (!newVal) {
+      isAnimating.value = true // 啟用 .moving.center 過渡
+      await nextTick() // 確保 DOM 在計算位置前已更新
+      animateToCenterAndBack()
     } else {
-      // 切換回原始模式，清除 transform
-      ballTransforms.value = {}
+      // isOriginal 變為 true (原始模式)
+      // 停止中心動畫循環
+      if (animationLoopTimeoutId.value) {
+        clearTimeout(animationLoopTimeoutId.value)
+        animationLoopTimeoutId.value = null
+      }
+      ballTransforms.value = {} // 確保球返回原始位置
+      isAnimating.value = true // 啟用 .moving.original 動畫
     }
   },
+  { immediate: true }, // 在組件掛載時立即運行以設定初始動畫狀態
 )
 
-const startAnimation = () => {
-  isAnimating.value = true
-}
-const stopAnimation = () => {
-  isAnimating.value = false
-}
-
-onMounted(() => {
-  // 延遲一秒後開始動畫
-  setTimeout(() => {
-    startAnimation()
-    // 如果一開始就是中心模式，計算位置
-    if (!props.isOriginal) {
-      setTimeout(() => {
-        calculateBallPositions()
-      }, 100)
-    }
-  }, 1000)
-})
-
 onUnmounted(() => {
-  stopAnimation()
+  // 當組件卸載時，清除任何活動的動畫循環
+  if (animationLoopTimeoutId.value) {
+    clearTimeout(animationLoopTimeoutId.value)
+    animationLoopTimeoutId.value = null
+  }
 })
 </script>
 
