@@ -19,4 +19,11 @@ export default defineConfigWithVueTs(
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
+
+  // 關掉 vue/multi-word-component-names 規則
+  {
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 )
