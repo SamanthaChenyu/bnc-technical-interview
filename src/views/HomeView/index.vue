@@ -1,5 +1,12 @@
 <template>
-  <NineSquare />
+  <div class="center">
+    <Switch
+      v-show="!sidebarCollapse"
+      :text="switchStatus ? '基礎需求' : '額外需求'"
+      v-model="switchStatus"
+    />
+  </div>
+  <NineSquare :isOriginal="switchStatus" />
   <div class="wrapper">
     <div id="sidebar" :class="{ active: sidebarCollapse }">
       <SidebarContent />
@@ -16,8 +23,10 @@ import { ref, type Ref } from 'vue'
 import MenuButton from '@/components/buttons/MenuButton.vue'
 import NineSquare from './components/NineSquare.vue'
 import SidebarContent from './components/SidebarContent.vue'
+import Switch from '@/components/Switch.vue'
 
 const sidebarCollapse: Ref<boolean> = ref(false)
+const switchStatus: Ref<boolean> = ref(true)
 
 const sidebarClose = (): void => {
   const target = document.querySelector('#checkbox') as HTMLElement | null
@@ -46,6 +55,14 @@ $color_darker: #5267c8;
   z-index: 1;
   width: 100%;
   top: 0;
+}
+
+.center {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 15%;
+  transform: translateX(-50%) translateY(-15%);
 }
 
 .mask {
