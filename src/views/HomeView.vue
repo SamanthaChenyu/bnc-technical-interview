@@ -54,7 +54,7 @@ const ACTIVE_TYPES = {
 
 const getMenuDataURL = (): Promise<ApiResponse<MenuData[]>> => {
   return import.meta.env.MODE === 'production'
-    ? apiService.get('/vue/data.json')
+    ? apiService.get('/bnc-technical-interview/data.json')
     : apiService.get<MenuData[]>('/data.json')
 }
 
