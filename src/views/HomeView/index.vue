@@ -13,6 +13,11 @@
       @select="handleDropdownSelect"
     />
   </div>
+  <div v-show="!sidebarCollapse" v-if="menuData.length > 0" class="menu-dropdown-section">
+    <ul class="menu-dropdown-container">
+      <MenuDropdown v-for="item in menuData" :key="item.key" :menu="item" :max-level="100" />
+    </ul>
+  </div>
   <NineSquare :isOriginal="switchStatus" />
   <div class="wrapper">
     <div id="sidebar" :class="{ active: sidebarCollapse }">
@@ -30,17 +35,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, type Ref } from 'vue'
+import { ref, onMounted, type Ref } from 'vue'
 import MenuButton from '@/components/buttons/MenuButton.vue'
 import NineSquare from './components/NineSquare.vue'
 import SidebarContent from './components/SidebarContent.vue'
 import Switch from '@/components/Switch.vue'
 import Dropdown from '@/components/Dropdown.vue'
+import MenuDropdown from '@/components/MenuDropdown.vue'
+import { type ApiResponse } from '@/services/apiService.ts'
+import * as apiService from '@/services/apiService.ts'
+
+interface MenuData {
+  key: string
+  text: string
+  children?: MenuData[]
+}
 
 const sidebarCollapse: Ref<boolean> = ref(false)
 const switchStatus: Ref<boolean> = ref(true)
 const selectedMenuKey: Ref<string | null> = ref(null)
 const sidebarContentRef: Ref<InstanceType<typeof SidebarContent> | null> = ref(null)
+const menuData: Ref<MenuData[]> = ref([])
 
 const sidebarClose = (): void => {
   const target = document.querySelector('#checkbox') as HTMLElement | null
@@ -59,6 +74,21 @@ const handleDropdownSelect = (key: string): void => {
 const handleSidebarSelection = (key: string | null): void => {
   selectedMenuKey.value = key
 }
+
+const loadMenuData = async (): Promise<void> => {
+  try {
+    const response: ApiResponse<MenuData[]> = await apiService.get(
+      '/bnc-technical-interview/deep-menu-100-levels.json',
+    )
+    menuData.value = response.data
+  } catch (error) {
+    console.error('載入100層資料失敗:', error)
+  }
+}
+
+onMounted(() => {
+  loadMenuData()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -193,5 +223,36 @@ p {
 #sidebar ul p {
   color: #fff;
   padding: 10px;
+}
+
+.menu-dropdown-section {
+  position: absolute;
+  z-index: 2;
+  background-color: #7486d6;
+  bottom: 0;
+  margin-top: 20px;
+  padding: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  h4 {
+    color: #fff;
+    font-size: 16px;
+    margin: 0 0 10px 0;
+    font-weight: 600;
+  }
+
+  .instruction-text {
+    color: #ffc107;
+    font-size: 12px;
+    margin: 0 0 15px 0;
+    font-style: italic;
+    opacity: 0.9;
+  }
+
+  .menu-dropdown-container {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
 }
 </style>
