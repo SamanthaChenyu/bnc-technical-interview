@@ -48,6 +48,9 @@ const list: Ref<MenuData[]> = ref([])
 const selectedKey: Ref<string | null> = ref(null)
 const expandedKeys: Ref<Set<string>> = ref(new Set())
 
+// localStorage 鍵名
+const STORAGE_KEY = 'sidebar-selected-item'
+
 const getMenuDataURL = (): Promise<ApiResponse<MenuData[]>> => {
   return apiService.get('/bnc-technical-interview/data.json')
 }
@@ -57,8 +60,23 @@ const handleCreate = async (): Promise<void> => {
   list.value = response.data
 }
 
+// 保存選取狀態到 localStorage
+const saveSelectedItem = (key: string | null): void => {
+  if (key) {
+    localStorage.setItem(STORAGE_KEY, key)
+  } else {
+    localStorage.removeItem(STORAGE_KEY)
+  }
+}
+
+// 從 localStorage 恢復選取狀態
+const loadSelectedItem = (): string | null => {
+  return localStorage.getItem(STORAGE_KEY)
+}
+
 const handleMenuSelect = (key: string): void => {
   selectedKey.value = key
+  saveSelectedItem(key) // 保存到 localStorage
   emit('selectionChange', key)
 
   // 當選擇項目時，收合不相關的展開項目
@@ -137,6 +155,7 @@ const selectItem = (key: string): void => {
     })
 
     selectedKey.value = key
+    saveSelectedItem(key) // 保存到 localStorage
     emit('selectionChange', key)
   }
 }
@@ -182,6 +201,8 @@ const handleMenuToggle = (key: string): void => {
     expandedKeys.value.delete(key)
     if (selectedKey.value === key) {
       selectedKey.value = null
+      saveSelectedItem(null) // 清除保存的狀態
+      emit('selectionChange', null)
     }
   } else {
     // 收合所有同級項目，只展開當前項目
@@ -192,11 +213,37 @@ const handleMenuToggle = (key: string): void => {
     })
     expandedKeys.value.add(key)
     selectedKey.value = key
+    saveSelectedItem(key) // 保存狀態
+    emit('selectionChange', key)
   }
 }
 
-onMounted(() => {
-  handleCreate()
+onMounted(async () => {
+  await handleCreate()
+
+  // 恢復上次選取的項目
+  const savedKey = loadSelectedItem()
+  if (savedKey && list.value.length > 0) {
+    // 檢查保存的 key 是否還存在於選單中
+    const itemExists = (items: MenuData[], targetKey: string): boolean => {
+      for (const item of items) {
+        if (item.key === targetKey) {
+          return true
+        }
+        if (item.children && itemExists(item.children, targetKey)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    if (itemExists(list.value, savedKey)) {
+      selectItem(savedKey)
+    } else {
+      // 如果保存的項目不存在，清除 localStorage
+      saveSelectedItem(null)
+    }
+  }
 })
 </script>
 
