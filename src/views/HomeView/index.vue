@@ -164,8 +164,8 @@ p {
 
   min-width: 450px;
   max-width: 450px;
-  min-height: 100%;
-  overflow: hidden;
+  height: 100vh; // 改用固定高度
+  overflow: visible; // 允許內部滾動
   margin-left: -450px;
   &.active {
     margin-left: 0px;
