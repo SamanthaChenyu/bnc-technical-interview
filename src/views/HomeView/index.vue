@@ -13,12 +13,19 @@
       @select="handleDropdownSelect"
     />
   </div>
+  <div class="ball-control-center">
+    <label class="ball-checkbox" v-show="!sidebarCollapse">
+      <input type="checkbox" v-model="showHundredBalls" class="checkbox-input" />
+      <span class="checkbox-text">顯示一百顆飛行球</span>
+    </label>
+  </div>
   <div v-show="!sidebarCollapse" v-if="menuData.length > 0" class="menu-dropdown-section">
     <ul class="menu-dropdown-container">
       <MenuDropdown v-for="item in menuData" :key="item.key" :menu="item" :max-level="100" />
     </ul>
   </div>
   <NineSquare :isOriginal="switchStatus" />
+  <BallFlightSystem :visible="showHundredBalls" />
   <div class="wrapper">
     <div id="sidebar" :class="{ active: sidebarCollapse }">
       <SidebarContent
@@ -42,6 +49,7 @@ import SidebarContent from './components/SidebarContent.vue'
 import Switch from '@/components/Switch.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import MenuDropdown from '@/components/MenuDropdown.vue'
+import BallFlightSystem from '@/components/BallFlightSystem.vue'
 import { type ApiResponse } from '@/services/apiService.ts'
 import * as apiService from '@/services/apiService.ts'
 
@@ -56,6 +64,7 @@ const switchStatus: Ref<boolean> = ref(true)
 const selectedMenuKey: Ref<string | null> = ref(null)
 const sidebarContentRef: Ref<InstanceType<typeof SidebarContent> | null> = ref(null)
 const menuData: Ref<MenuData[]> = ref([])
+const showHundredBalls: Ref<boolean> = ref(false)
 
 const sidebarClose = (): void => {
   const target = document.querySelector('#checkbox') as HTMLElement | null
@@ -127,6 +136,49 @@ $color_darker: #5267c8;
   left: 50%;
   top: 20%;
   transform: translateX(-50%) translateY(-20%);
+}
+
+.ball-control-center {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+}
+
+.ball-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 20px;
+  border-radius: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(109, 127, 204, 0.3);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    border-color: rgba(109, 127, 204, 0.5);
+    transform: translateY(-2px);
+  }
+
+  .checkbox-input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #6d7fcc;
+  }
+
+  .checkbox-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    user-select: none;
+  }
 }
 
 .mask {
