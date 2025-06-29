@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, type Ref } from 'vue'
+import { ref, onMounted, watch, type Ref } from 'vue'
 import { type ApiResponse } from '@/services/apiService.ts'
 import MenuItem from './MenuItem.vue'
 import * as apiService from '@/services/apiService.ts'
@@ -34,6 +34,14 @@ interface MenuData {
   children?: MenuData[]
 }
 
+const props = defineProps<{
+  externalSelectedKey?: string | null
+}>()
+
+const emit = defineEmits<{
+  selectionChange: [key: string | null]
+}>()
+
 const list: Ref<MenuData[]> = ref([])
 const selectedKey: Ref<string | null> = ref(null)
 const expandedKeys: Ref<Set<string>> = ref(new Set())
@@ -49,7 +57,56 @@ const handleCreate = async (): Promise<void> => {
 
 const handleMenuSelect = (key: string): void => {
   selectedKey.value = key
+  emit('selectionChange', key)
 }
+
+// 暴露給外部調用的選擇方法
+const selectItem = (key: string): void => {
+  // 找到該項目並展開其父級
+  const findAndExpandPath = (
+    items: MenuData[],
+    targetKey: string,
+    path: string[] = [],
+  ): boolean => {
+    for (const item of items) {
+      const currentPath = [...path, item.key]
+
+      if (item.key === targetKey) {
+        // 找到目標項目，展開路徑上的所有父級
+        path.forEach((parentKey) => {
+          expandedKeys.value.add(parentKey)
+        })
+        selectedKey.value = targetKey
+        emit('selectionChange', targetKey)
+        return true
+      }
+
+      if (item.children) {
+        if (findAndExpandPath(item.children, targetKey, currentPath)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  findAndExpandPath(list.value, key)
+}
+
+// 監聽外部傳入的選擇
+watch(
+  () => props.externalSelectedKey,
+  (newKey) => {
+    if (newKey && newKey !== selectedKey.value) {
+      selectItem(newKey)
+    }
+  },
+)
+
+// 暴露方法給父組件
+defineExpose({
+  selectItem,
+})
 
 const handleMenuToggle = (key: string): void => {
   // 找到當前項目和它的同級項目

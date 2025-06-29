@@ -2,14 +2,25 @@
   <div class="center">
     <Switch
       v-show="!sidebarCollapse"
-      :text="switchStatus ? '基礎需求' : '額外需求'"
+      :text="switchStatus ? '九宮格基礎需求' : '九宮格額外需求'"
       v-model="switchStatus"
+    />
+  </div>
+  <div class="dropdown-center">
+    <Dropdown
+      v-show="!sidebarCollapse"
+      :selected-key="selectedMenuKey"
+      @select="handleDropdownSelect"
     />
   </div>
   <NineSquare :isOriginal="switchStatus" />
   <div class="wrapper">
     <div id="sidebar" :class="{ active: sidebarCollapse }">
-      <SidebarContent />
+      <SidebarContent
+        ref="sidebarContentRef"
+        :external-selected-key="selectedMenuKey"
+        @selection-change="handleSidebarSelection"
+      />
     </div>
     <div v-if="sidebarCollapse" class="mask" @click="sidebarClose" />
     <div id="content" :class="sidebarCollapse ? 'menuOpen' : 'menuClose'">
@@ -24,14 +35,29 @@ import MenuButton from '@/components/buttons/MenuButton.vue'
 import NineSquare from './components/NineSquare.vue'
 import SidebarContent from './components/SidebarContent.vue'
 import Switch from '@/components/Switch.vue'
+import Dropdown from '@/components/Dropdown.vue'
 
 const sidebarCollapse: Ref<boolean> = ref(false)
 const switchStatus: Ref<boolean> = ref(true)
+const selectedMenuKey: Ref<string | null> = ref(null)
+const sidebarContentRef: Ref<InstanceType<typeof SidebarContent> | null> = ref(null)
 
 const sidebarClose = (): void => {
   const target = document.querySelector('#checkbox') as HTMLElement | null
   target?.click()
   sidebarCollapse.value = false
+}
+
+const handleDropdownSelect = (key: string): void => {
+  selectedMenuKey.value = key
+  // 通知 SidebarContent 選擇該項目
+  if (sidebarContentRef.value) {
+    sidebarContentRef.value.selectItem(key)
+  }
+}
+
+const handleSidebarSelection = (key: string | null): void => {
+  selectedMenuKey.value = key
 }
 </script>
 
@@ -61,8 +87,16 @@ $color_darker: #5267c8;
   position: absolute;
   z-index: 2;
   left: 50%;
-  top: 15%;
-  transform: translateX(-50%) translateY(-15%);
+  top: 10%;
+  transform: translateX(-50%) translateY(-10%);
+}
+
+.dropdown-center {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 20%;
+  transform: translateX(-50%) translateY(-20%);
 }
 
 .mask {
